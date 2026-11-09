@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="بورصة BOURSA — منصة موريتانية لعرض السيارات والبحث عنها والتواصل مع البائعين.">
+<meta name="theme-color" content="#263c32">
+<title>بورصة | BOURSA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+</head>
+<body>
+<header class="site-header"><div class="container nav">
+  <a class="brand" href="#"><span class="brand-mark">ب</span><span>بورصة<small>BOURSA</small></span></a>
+  <nav><a href="#cars">السيارات</a><a href="#how">كيف تعمل المنصة؟</a></nav>
+  <a class="button button-dark" id="contactTop" href="#">تواصل معنا</a>
+</div></header>
+<main class="container">
+  <section class="hero">
+    <div class="hero-copy"><span class="eyebrow">سوق السيارات في موريتانيا</span>
+      <h1>اختَر سيارتك<br><em>بثقة ووضوح.</em></h1>
+      <p>اكتشف السيارات المعروضة، قارن المواصفات، وتواصل مباشرة للاستفسار أو حجز موعد للمعاينة.</p>
+      <a class="button button-light" href="#cars">اكتشف السيارات <span>←</span></a>
+      <div class="trust-points"><span>✓ تفاصيل واضحة</span><span>✓ تواصل مباشر</span><span>✓ تجربة سهلة</span></div>
+    </div>
+    <div class="hero-visual"><img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1200&q=85" alt="سيارة معروضة للبيع"></div>
+  </section>
+
+  <section class="search-panel" aria-label="البحث عن السيارات">
+    <div class="search-heading"><div><span class="eyebrow">اعثر على ما يناسبك</span><h2>ابحث عن سيارة</h2></div><button class="text-button" id="resetFilters">إعادة ضبط الفلاتر</button></div>
+    <div class="filters">
+      <label class="search-input"> <span>بحث</span><input id="q" type="search" placeholder="مثال: Toyota Hilux"></label>
+      <label><span>القسم</span><select id="category"><option value="">كل الأقسام</option></select></label>
+      <label><span>المدينة</span><select id="city"><option value="">كل المدن</option><option>نواكشوط</option><option>نواذيبو</option><option>الزويرات</option><option>روصو</option><option>كيفه</option><option>أخرى</option></select></label>
+      <label><span>ترتيب حسب</span><select id="sort"><option value="newest">الأحدث</option><option value="low">السعر: الأقل أولاً</option><option value="high">السعر: الأعلى أولاً</option></select></label>
+      <label><span>السعر من (MRU)</span><input id="minPrice" type="number" min="0" placeholder="0"></label>
+      <label><span>السعر إلى (MRU)</span><input id="maxPrice" type="number" min="0" placeholder="بدون حد"></label>
+    </div>
+  </section>
+
+  <section id="cars" class="cars-section">
+    <div class="section-title"><div><span class="eyebrow">المعروض حالياً</span><h2>سيارات مختارة</h2></div><span id="resultCount" class="result-count">جارٍ التحميل…</span></div>
+    <div id="loading" class="car-grid"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+    <div id="carGrid" class="car-grid"></div><div id="empty" class="empty-state" hidden><div>⌕</div><h3>لا توجد نتائج مطابقة</h3><p>جرّب تغيير كلمات البحث أو الفلاتر.</p></div>
+    <div id="loadError" class="notice" hidden>تعذر تحميل السيارات حالياً. تحقق من إعدادات الاتصال ثم أعد المحاولة.</div>
+  </section>
+
+  <section id="how" class="how-section"><div><span class="eyebrow">خطوات بسيطة</span><h2>من البحث إلى المعاينة</h2><p>تصفح التفاصيل، أرسل اهتمامك، ثم تواصل مع فريق بورصة لتأكيد المعلومات وترتيب المعاينة.</p></div>
+    <div class="steps"><article><b>01</b><h3>ابحث وقارن</h3><p>استخدم البحث والفلاتر للوصول إلى السيارة المناسبة.</p></article><article><b>02</b><h3>اطّلع على التفاصيل</h3><p>راجع السعر والسنة والمدينة والحالة المعلنة.</p></article><article><b>03</b><h3>تواصل معنا</h3><p>أرسل بيانات التواصل وسنتابع معك.</p></article></div>
+  </section>
+</main>
+<footer><div class="container footer-inner"><a class="brand brand-footer" href="#"><span class="brand-mark">ب</span><span>بورصة<small>BOURSA</small></span></a><p>منصة لعرض السيارات في موريتانيا. يرجى التحقق من السيارة ووثائقها قبل إتمام أي عملية.</p><span id="footerPhone"></span></div></footer>
+
+<div class="modal" id="carModal" aria-hidden="true"><div class="modal-backdrop" data-close></div><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><button class="modal-close" data-close aria-label="إغلاق">×</button><div id="carDetail"></div></section></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body></html>
