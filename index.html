@@ -112,7 +112,7 @@ input,select,textarea{font-family:inherit;outline:none}
   <div id="loading" class="loading">⏳ جارٍ التحميل...</div>
 
   <div style="background:#fff;border:1px solid var(--border);border-radius:18px;padding:20px;margin:24px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-    <div><b>تبيع سيارتك؟</b><p style="font-size:12px;color:var(--muted)">أرسل لنا صورتها على واتساب ونعرضها لك.</p></div>
+    <div><b>تبيع سيارتك؟</b><p style="font-size:12px;color:var(--muted)">أرسل لنا صورتها وفيديوهاتها على واتساب ونعرضها لك.</p></div>
     <a class="btn btn-wa" href="https://wa.me/22246000000?text=أريد%20بيع%20سيارتي" target="_blank">أرسل سيارتك على واتساب →</a>
   </div>
 </main>
@@ -130,28 +130,16 @@ input,select,textarea{font-family:inherit;outline:none}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* =====================================================================
-   1) إعدادات Supabase — استبدل القيمتين بعد إنشاء المشروع
-   ===================================================================== */
-const SUPABASE_URL     = 'https://YOUR-PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR-PUBLIC-ANON-KEY';
-
-if (SUPABASE_URL.includes('YOUR-PROJECT')) {
-  alert('⚠️ يجب استبدال SUPABASE_URL و SUPABASE_ANON_KEY في index.html بإعدادات مشروعك.');
-}
+// إعدادات Supabase الخاصة بك
+const SUPABASE_URL      = 'https://zmbovrtghfctlqfqzclp.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_p7Ccihti7ahXtJ3lAmRAdw_C_wRv1bq';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* =====================================================================
-   2) الحالة المحلية
-   ===================================================================== */
 let allCars = [];
 let allCats = [];
 const DEFAULT_IMG = 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=1000&auto=format&fit=crop';
 
-/* =====================================================================
-   3) أدوات مساعدة
-   ===================================================================== */
 const $ = s => document.querySelector(s);
 const fmt = n => Number(n || 0).toLocaleString('en-US');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -164,9 +152,6 @@ function toast(msg, isError = false) {
   toast._t = setTimeout(() => t.className = 'toast', 3000);
 }
 
-/* =====================================================================
-   4) جلب البيانات من Supabase
-   ===================================================================== */
 async function loadCategories() {
   const { data, error } = await supabase.from('categories').select('*').order('name');
   if (error) { console.error(error); return; }
@@ -182,7 +167,7 @@ async function loadCars() {
 
   const { data, error } = await supabase
     .from('cars')
-    .select('id,title,price,year,km,fuel,city,inspection_status,description,image_url,category_id,created_at')
+    .select('id,title,price,year,km,fuel,city,inspection_status,description,image_url,video_url,category_id,created_at')
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
@@ -198,9 +183,6 @@ async function loadCars() {
   render();
 }
 
-/* =====================================================================
-   5) عرض السيارات + الفلترة
-   ===================================================================== */
 function render() {
   let list = allCars;
 
@@ -220,14 +202,13 @@ function render() {
   $('#empty').style.display = list.length ? 'none' : 'block';
 
   $('#grid').innerHTML = list.map(c => {
-    const catName = allCats.find(x => x.id === c.category_id)?.name || '';
     const isOk = c.inspection_status === 'done';
     return `
       <div class="card" onclick="openCar('${c.id}')">
         <img src="${esc(c.image_url || DEFAULT_IMG)}" alt="${esc(c.title)}" loading="lazy">
         <div class="card-body">
           <b>${esc(c.title)}</b>
-          <div class="meta">${c.year} • ${esc(c.fuel)} • ${esc(c.city)} • ${fmt(c.km)} كم${catName ? ' • ' + esc(catName) : ''}</div>
+          <div class="meta">${c.year} • ${esc(c.fuel)} • ${esc(c.city)} • ${fmt(c.km)} كم</div>
           <div class="price">${fmt(c.price)} MRU</div>
           <span class="badge ${isOk ? 'ok' : 'wait'}">${isOk ? '✅ تم الفحص' : '⏳ بانتظار الفحص'}</span>
         </div>
@@ -235,15 +216,21 @@ function render() {
   }).join('');
 }
 
-/* =====================================================================
-   6) مودال السيارة + نموذج الاهتمام
-   ===================================================================== */
 function openCar(id) {
   const c = allCars.find(x => x.id === id);
   if (!c) return;
 
   const monthly = Math.round(Number(c.price) * 0.6 / 12);
   const isOk = c.inspection_status === 'done';
+  
+  let videoHTML = '';
+  if (c.video_url) {
+    videoHTML = `
+      <div style="margin-top:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px">🎥 فيديو السيارة:</div>
+        <video src="${esc(c.video_url)}" controls style="width:100%;border-radius:14px;background:#000"></video>
+      </div>`;
+  }
 
   $('#carDetail').innerHTML = `
     <img class="cover" src="${esc(c.image_url || DEFAULT_IMG)}" alt="${esc(c.title)}">
@@ -253,6 +240,8 @@ function openCar(id) {
         <button class="close-btn" onclick="closeCar()">✕</button>
       </div>
       ${c.description ? `<p style="font-size:13px;color:#777;margin-top:6px">${esc(c.description)}</p>` : ''}
+
+      ${videoHTML}
 
       <div class="spec">
         <div><small>السنة</small><b>${c.year}</b></div>
@@ -297,28 +286,20 @@ async function submitInterest(carId) {
   const name  = $('#leadName').value.trim();
   const phone = $('#leadPhone').value.trim();
 
-  if (name.length < 2)       return toast('اكتب اسمك بشكل صحيح', true);
+  if (name.length < 2) return toast('اكتب اسمك بشكل صحيح', true);
   if (phone.replace(/\D/g,'').length < 6) return toast('رقم الهاتف غير صحيح', true);
 
   const btn = event.target;
-  btn.disabled = true;
-  btn.textContent = '...';
+  btn.disabled = true; btn.textContent = '...';
 
   const { error } = await supabase.from('leads').insert({
-    car_id: car.id,
-    car_title: car.title,
-    name,
-    phone,
-    status: 'new'
+    car_id: car.id, car_title: car.title, name, phone, status: 'new'
   });
 
-  btn.disabled = false;
-  btn.textContent = 'إرسال';
+  btn.disabled = false; btn.textContent = 'إرسال';
 
   if (error) {
-    console.error(error);
-    toast('تعذر الإرسال. حاول مرة أخرى.', true);
-    return;
+    console.error(error); toast('تعذر الإرسال. حاول مرة أخرى.', true); return;
   }
 
   $('#interestWrap').innerHTML = `
@@ -326,32 +307,20 @@ async function submitInterest(carId) {
       ✅ تم تسجيل اهتمامك بسيارة <b>${esc(car.title)}</b>.<br>
       سنتواصل معك على الرقم <b>${esc(phone)}</b> قريباً.
     </div>`;
-
   toast('✅ تم تسجيل اهتمامك بنجاح');
 }
 
-/* =====================================================================
-   7) التهيئة والأحداث
-   ===================================================================== */
 ['q','fCat','fCity'].forEach(id => {
   const el = document.getElementById(id);
   el.addEventListener('input', render);
   el.addEventListener('change', render);
 });
 
-$('#carModal').addEventListener('click', e => {
-  if (e.target.id === 'carModal') closeCar();
-});
+$('#carModal').addEventListener('click', e => { if (e.target.id === 'carModal') closeCar(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCar(); });
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeCar();
-});
-
-/* التحديث الفوري عند تغيير السيارات (اختياري - يحتاج تفعيل Realtime للجدول) */
 try {
-  supabase.channel('cars-public')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'cars' }, loadCars)
-    .subscribe();
+  supabase.channel('cars-public').on('postgres_changes', { event: '*', schema: 'public', table: 'cars' }, loadCars).subscribe();
 } catch (_) {}
 
 (async function init() {
