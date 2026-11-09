@@ -10,7 +10,8 @@
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:#222;line-height:1.6}
 .container{max-width:1000px;margin:0 auto;padding:0 16px}
 input,select,textarea{font-family:inherit;outline:none}
-.btn{padding:10px 16px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;border:none;display:inline-block;text-align:center}
+.btn{padding:10px 16px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;border:none;display:inline-block;text-align:center;transition:.15s}
+.btn:hover{opacity:.85}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-dark{background:var(--dark);color:#fff}
 .btn-green{background:var(--primary);color:#fff}
@@ -99,6 +100,10 @@ input,select,textarea{font-family:inherit;outline:none}
       <input class="field" id="aImg" placeholder="أو رابط صورة مباشر">
       <img id="imgPreview" class="thumb-preview" alt="معاينة">
 
+      <div class="hint" style="margin-top:10px">فيديو السيارة (رفع من الجهاز أو رابط):</div>
+      <input class="field" id="aVidFile" type="file" accept="video/*">
+      <input class="field" id="aVid" placeholder="أو رابط فيديو مباشر (mp4)">
+
       <textarea class="field" id="aDesc" rows="3" placeholder="وصف مختصر"></textarea>
 
       <button id="saveBtn" class="btn btn-green" style="width:100%;padding:13px" onclick="saveCar()">💾 حفظ السيارة</button>
@@ -134,29 +139,17 @@ input,select,textarea{font-family:inherit;outline:none}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* =====================================================================
-   1) إعدادات Supabase — استبدل القيمتين (نفسهما في index.html)
-   ===================================================================== */
-const SUPABASE_URL      = 'https://YOUR-PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR-PUBLIC-ANON-KEY';
-
-if (SUPABASE_URL.includes('YOUR-PROJECT')) {
-  alert('⚠️ استبدل إعدادات Supabase في admin.html.');
-}
+// إعدادات Supabase الخاصة بك
+const SUPABASE_URL      = 'https://zmbovrtghfctlqfqzclp.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_p7Ccihti7ahXtJ3lAmRAdw_C_wRv1bq';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* =====================================================================
-   2) الحالة
-   ===================================================================== */
 let editId = null;
 let currentUser = null;
 let allCars = [], allLeads = [], allCats = [];
 const DEFAULT_IMG = 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=1000&auto=format&fit=crop';
 
-/* =====================================================================
-   3) أدوات
-   ===================================================================== */
 const $ = s => document.querySelector(s);
 const fmt = n => Number(n || 0).toLocaleString('en-US');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -170,9 +163,7 @@ function toast(msg, isError = false) {
   toast._t = setTimeout(() => t.style.display = 'none', 3000);
 }
 
-/* =====================================================================
-   4) المصادقة
-   ===================================================================== */
+/* --- المصادقة --- */
 async function login() {
   const email = $('#em').value.trim();
   const password = $('#pw').value;
@@ -196,11 +187,7 @@ async function login() {
 }
 
 async function verifyAdminAndEnter(user) {
-  const { data: adminRow, error } = await supabase
-    .from('admin_users')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  const { data: adminRow, error } = await supabase.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
 
   if (error || !adminRow) {
     await supabase.auth.signOut();
@@ -228,9 +215,7 @@ async function logout() {
   if (session?.user) await verifyAdminAndEnter(session.user);
 })();
 
-/* =====================================================================
-   5) تبويبات
-   ===================================================================== */
+/* --- التبويبات --- */
 function tab(name, btn) {
   document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -240,9 +225,7 @@ function tab(name, btn) {
   });
 }
 
-/* =====================================================================
-   6) تحميل البيانات
-   ===================================================================== */
+/* --- تحميل البيانات --- */
 async function refreshDashboard() {
   const [carsRes, leadsRes, catsRes] = await Promise.all([
     supabase.from('cars').select('*').order('created_at', { ascending: false }),
@@ -250,10 +233,7 @@ async function refreshDashboard() {
     supabase.from('categories').select('*').order('name')
   ]);
 
-  if (carsRes.error || leadsRes.error || catsRes.error) {
-    toast('تعذر تحميل البيانات', true);
-    return;
-  }
+  if (carsRes.error || leadsRes.error || catsRes.error) return toast('تعذر تحميل البيانات', true);
 
   allCars  = carsRes.data || [];
   allLeads = leadsRes.data || [];
@@ -263,9 +243,7 @@ async function refreshDashboard() {
   $('#sLeads').textContent = allLeads.filter(l => l.status === 'new').length;
   $('#sCats').textContent  = allCats.length;
 
-  $('#aCat').innerHTML = allCats.map(c =>
-    `<option value="${c.id}">${esc(c.name)}</option>`).join('') ||
-    '<option value="">— أضف قسماً أولاً —</option>';
+  $('#aCat').innerHTML = allCats.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('') || '<option value="">— أضف قسماً أولاً —</option>';
 
   renderCarsList();
   renderLeadsList();
@@ -278,10 +256,7 @@ function renderCarsList() {
       <img src="${esc(c.image_url || DEFAULT_IMG)}" alt="">
       <div style="flex:1;min-width:140px">
         <b style="font-size:13px">${esc(c.title)}</b>
-        <div style="font-size:11px;color:#888">
-          ${fmt(c.price)} MRU • ${esc(c.city)}
-          ${!c.is_active ? '<span style="color:#C0392B">• مخفية</span>' : ''}
-        </div>
+        <div style="font-size:11px;color:#888">${fmt(c.price)} MRU • ${esc(c.city)} ${!c.is_active ? '<span style="color:#C0392B">• مخفية</span>' : ''}</div>
       </div>
       <button class="btn btn-outline" onclick="toggleActive('${c.id}',${c.is_active})">${c.is_active ? 'إخفاء' : 'إظهار'}</button>
       <button class="btn btn-outline" onclick="editCar('${c.id}')">تعديل</button>
@@ -298,11 +273,10 @@ function renderLeadsList() {
         <div style="font-size:12px;color:#555">مهتم بـ: ${esc(l.car_title || '—')}</div>
         <div style="font-size:11px;color:#999">${new Date(l.created_at).toLocaleString('ar-MR')}</div>
       </div>
-      <select onchange="updateLeadStatus('${l.id}', this.value)"
-              style="padding:8px;border:1px solid var(--border);border-radius:999px;font-size:12px">
-        <option value="new"       ${l.status === 'new'       ? 'selected' : ''}>جديد</option>
+      <select onchange="updateLeadStatus('${l.id}', this.value)" style="padding:8px;border:1px solid var(--border);border-radius:999px;font-size:12px">
+        <option value="new" ${l.status === 'new' ? 'selected' : ''}>جديد</option>
         <option value="contacted" ${l.status === 'contacted' ? 'selected' : ''}>تم التواصل</option>
-        <option value="sold"      ${l.status === 'sold'      ? 'selected' : ''}>تم البيع</option>
+        <option value="sold" ${l.status === 'sold' ? 'selected' : ''}>تم البيع</option>
       </select>
       <a class="btn btn-green" href="https://wa.me/${l.phone.replace(/\D/g,'')}" target="_blank">واتساب</a>
     </div>
@@ -313,34 +287,23 @@ function renderCatsList() {
   $('#catList').innerHTML = allCats.map(c => `
     <div class="row">
       <b>${esc(c.name)}</b>
-      <span style="font-size:11px;color:#888">
-        ${allCars.filter(x => x.category_id === c.id).length} سيارة
-      </span>
+      <span style="font-size:11px;color:#888">${allCars.filter(x => x.category_id === c.id).length} سيارة</span>
       <button class="btn btn-danger" style="margin-right:auto" onclick="deleteCategory('${c.id}')">حذف</button>
     </div>
   `).join('') || '<div class="hint">لا توجد أقسام.</div>';
 }
 
-/* =====================================================================
-   7) رفع الصور إلى Supabase Storage
-   ===================================================================== */
-async function uploadCarImage(file) {
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-  const path = `cars/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-
-  const { error } = await supabase.storage
-    .from('car-images')
-    .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
-
+/* --- رفع الملفات --- */
+async function uploadFile(file, bucket) {
+  const ext = (file.name.split('.').pop() || 'file').toLowerCase();
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const { error } = await supabase.storage.from(bucket).upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
   if (error) throw error;
-
-  const { data } = supabase.storage.from('car-images').getPublicUrl(path);
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 }
 
-/* =====================================================================
-   8) حفظ السيارة
-   ===================================================================== */
+/* --- حفظ السيارة --- */
 async function saveCar() {
   const title = $('#aTitle').value.trim();
   const price = Number($('#aPrice').value);
@@ -351,19 +314,22 @@ async function saveCar() {
   btn.disabled = true; btn.textContent = '...جارٍ الحفظ';
 
   let imageUrl = $('#aImg').value.trim() || null;
-  const file = $('#aImgFile').files[0];
+  let videoUrl = $('#aVid').value.trim() || null;
+  
+  const imgFile = $('#aImgFile').files[0];
+  const vidFile = $('#aVidFile').files[0];
 
   try {
-    if (file) imageUrl = await uploadCarImage(file);
+    if (imgFile) imageUrl = await uploadFile(imgFile, 'car-images');
+    if (vidFile) videoUrl = await uploadFile(vidFile, 'car-videos');
   } catch (e) {
     console.error(e);
     btn.disabled = false; btn.textContent = '💾 حفظ السيارة';
-    return toast('فشل رفع الصورة: ' + e.message, true);
+    return toast('فشل رفع الملف: ' + e.message, true);
   }
 
   const payload = {
-    title,
-    price,
+    title, price,
     year: Number($('#aYear').value) || new Date().getFullYear(),
     km:   Number($('#aKm').value)   || 0,
     fuel: $('#aFuel').value,
@@ -371,6 +337,7 @@ async function saveCar() {
     category_id: $('#aCat').value || null,
     inspection_status: $('#aInsp').value,
     image_url: imageUrl,
+    video_url: videoUrl,
     description: $('#aDesc').value.trim() || null,
     is_active: true
   };
@@ -385,8 +352,7 @@ async function saveCar() {
   btn.disabled = false; btn.textContent = '💾 حفظ السيارة';
 
   if (error) {
-    console.error(error);
-    return toast('فشل الحفظ: ' + error.message, true);
+    console.error(error); return toast('فشل الحفظ: ' + error.message, true);
   }
 
   resetForm();
@@ -396,22 +362,22 @@ async function saveCar() {
 
 function resetForm() {
   editId = null;
-  ['aTitle','aPrice','aYear','aKm','aImg','aDesc'].forEach(id => $('#'+id).value = '');
+  ['aTitle','aPrice','aYear','aKm','aImg','aVid','aDesc'].forEach(id => $('#'+id).value = '');
   $('#aImgFile').value = '';
+  $('#aVidFile').value = '';
   $('#imgPreview').classList.remove('show');
   $('#formTitle').textContent = 'إضافة سيارة';
 }
 
-/* =====================================================================
-   9) تعديل / حذف / إظهار السيارات
-   ===================================================================== */
+/* --- تعديل / حذف / إظهار --- */
 async function editCar(id) {
-  const { data: c, error } = await supabase.from('cars').select('*').eq('id', id).single();
-  if (error) return toast(error.message, true);
+  const { data: c,);
+ error } = await supabase.from('cars').select(' *').eq('id', id). constsingle();
+  if (error) return toast(error.message, { true);
 
   editId = id;
-  $('#formTitle').textContent = 'تعديل السيارة';
-  $('#aTitle').value = c.title;
+  $('#formTitle error').textContent = 'تعديل السيارة';
+  } $('#aTitle').value = c.title;
   $('#aPrice').value = c.price;
   $('#aYear').value  = c.year;
   $('#aKm').value    = c.km;
@@ -420,8 +386,10 @@ async function editCar(id) {
   $('#aCat').value   = c.category_id || '';
   $('#aInsp').value  = c.inspection_status;
   $('#aImg').value   = c.image_url || '';
+  $('#aVid').value   = c.video_url || '';
   $('#aDesc').value  = c.description || '';
   $('#aImgFile').value = '';
+  $('#aVidFile').value = '';
 
   const prev = $('#imgPreview');
   if (c.image_url) { prev.src = c.image_url; prev.classList.add('show'); }
@@ -445,9 +413,7 @@ async function toggleActive(id, current) {
   await refreshDashboard();
 }
 
-/* =====================================================================
-   10) الاهتمامات
-   ===================================================================== */
+/* --- الاهتمامات والأقسام --- */
 async function updateLeadStatus(id, status) {
   const { error } = await supabase.from('leads').update({ status }).eq('id', id);
   if (error) return toast(error.message, true);
@@ -456,35 +422,25 @@ async function updateLeadStatus(id, status) {
   $('#sLeads').textContent = allLeads.filter(l => l.status === 'new').length;
 }
 
-/* =====================================================================
-   11) الأقسام
-   ===================================================================== */
 async function addCat() {
   const name = $('#newCat').value.trim();
-  if (!name) return toast('اكتب اسم القسم', true);
-
-  const { error } = await supabase.from('categories').insert({ name });
+  if (!name) return toast('اكتب اسم القسم', true = await supabase.from('categories').insert({ name });
   if (error) return toast(error.message, true);
-
   $('#newCat').value = '';
   await refreshDashboard();
   toast('✅ تم إضافة القسم');
 }
 
 async function deleteCategory(id) {
-  const { count } = await supabase
-    .from('cars').select('id', { count: 'exact', head: true }).eq('category_id', id);
+  const { count } = await supabase.from('cars').select('id', { count: 'exact', head: true }).eq('category_id', id);
   if (count > 0) return toast('لا يمكن حذف قسم يحتوي سيارات', true);
   if (!confirm('حذف هذا القسم؟')) return;
-
   const { error } = await supabase.from('categories').delete().eq('id', id);
   if (error) return toast(error.message, true);
   await refreshDashboard();
 }
 
-/* =====================================================================
-   12) معاينة الصورة
-   ===================================================================== */
+/* --- معاينة الصورة --- */
 $('#aImgFile').addEventListener('change', e => {
   const f = e.target.files[0];
   const prev = $('#imgPreview');
