@@ -13,7 +13,7 @@ button,input,select,textarea{font-family:inherit;outline:none;border:none;cursor
 .login p{color:var(--muted);font-size:13px;margin-bottom:22px}
 .login input{width:100%;padding:13px 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:#fff;font-size:15px;margin-bottom:12px;text-align:center;cursor:text}
 .login button{width:100%;padding:13px;border-radius:12px;background:var(--t);color:#000;font-weight:800;font-size:15px}
-.back-link{display:inline-flex;align-items:center;gap:6px;margin-top:18px;color:var(--t);text-decoration:none;font-size:13px;font-weight:700;padding:8px 16px;border:1px solid var(--line);border-radius:999px;transition:.2s}
+.back-link{display:inline-flex;align-items:center;gap:6px;margin-top:18px;color:var(--t);text-decoration:none;font-size:13px;font-weight:700;padding:8px 16px;border:1px solid var(--line);border-radius:999px}
 .back-link:hover{background:var(--panel2);border-color:var(--t)}
 .err{color:var(--red);font-size:13px;min-height:18px;margin-top:6px}
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;background:rgba(14,15,17,.95);backdrop-filter:blur(10px);flex-wrap:wrap;gap:10px}
@@ -78,7 +78,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover{background:#1b1e22}
 <div class="login" id="login">
   <form class="box" id="loginForm">
     <h1>ANEQ <span>Admin</span></h1>
-    <p id="loginHint">سجّل الدخول للوصول إلى لوحة التحكم</p>
+    <p>سجّل الدخول للوصول إلى لوحة التحكم</p>
     <input id="email" type="email" placeholder="البريد الإلكتروني" autocomplete="username">
     <input id="pw" type="password" placeholder="كلمة المرور" autocomplete="current-password">
     <button type="submit">دخول</button>
@@ -107,7 +107,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover{background:#1b1e22}
     </div>
 
     <section class="tab active" id="tab-products">
-      <form class="pform" id="pForm" enctype="multipart/form-data">
+      <form class="pform" id="pForm">
         <div class="fh" id="formTitle">➕ إضافة منتج جديد</div>
         <div class="frow">
           <input id="fName" placeholder="اسم المنتج *" required>
@@ -119,17 +119,14 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover{background:#1b1e22}
           <input id="fEmoji" placeholder="إيموجي" value="📦">
           <input id="fDesc" placeholder="وصف قصير">
         </div>
-
         <div class="imgdrop" id="imgDrop">
           <div class="ic">🖼️</div>
           <p><b>اسحب الصور هنا</b> أو انقر للاختيار</p>
-          <small>يمكن اختيار عدة صور · يتم ضغطها تلقائيًا</small>
+          <small>عدة صور مدعومة · يتم رفعها تلقائيًا</small>
           <input id="fImgFiles" type="file" accept="image/*" multiple style="display:none">
         </div>
         <div class="imgprev" id="imgPrev"></div>
-
         <div class="errbox" id="saveErr"></div>
-
         <div class="factions">
           <button type="button" class="btn ghost" onclick="cancelEdit()">إلغاء</button>
           <button type="submit" class="btn" id="saveBtn">حفظ المنتج</button>
@@ -143,7 +140,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover{background:#1b1e22}
 
     <section class="tab" id="tab-orders">
       <div class="tablewrap">
-        <div class="thead"><h3>🧾 الطلبات</h3><input id="oSearch" placeholder="بحث بالاسم أو الهاتف..."></div>
+        <div class="thead"><h3>🧾 الطلبات</h3><input id="oSearch" placeholder="بحث..."></div>
         <div style="overflow:auto"><table><thead><tr><th>#</th><th>العميل</th><th>الهاتف</th><th>المنتجات</th><th>المجموع</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody id="oBody"></tbody></table></div>
       </div>
     </section>
@@ -153,11 +150,10 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover{background:#1b1e22}
         <div class="fh">⚙️ إعدادات المتجر</div>
         <div class="frow">
           <input id="sName" placeholder="اسم المتجر">
-          <input id="sCurrency" placeholder="العملة (افتراضي: أوقية)">
+          <input id="sCurrency" placeholder="العملة">
           <input id="sWhatsapp" placeholder="رقم واتساب">
         </div>
         <div class="factions"><button class="btn" type="submit">حفظ الإعدادات</button></div>
-        <p style="color:var(--muted);font-size:12.5px;margin-top:14px;line-height:1.8">💡 الوضع: <b id="modeLabel"></b></p>
       </form>
     </section>
   </div>
@@ -170,8 +166,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover{background:#1b1e22}
 <script src="api.js"></script>
 <script>
 let PRODUCTS = [], ORDERS = [], SETTINGS = {}, EDIT_ID = null;
-let PENDING_IMAGES = []; // مصفوفة الصور المختارة (base64 مضغوطة)
-let PREVIEWS = [];        // الصور الموجودة أثناء التعديل
+let PREVIEWS = [], NEW_FILES = []; // الملفات الجديدة التي ستُرفع
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -182,58 +177,20 @@ function toast(msg, type) {
   $('toasts').appendChild(el);
   setTimeout(() => { el.style.opacity = 0; el.style.transition = '.3s'; setTimeout(() => el.remove(), 300); }, 2500);
 }
-function showErr(msg) {
-  const box = $('saveErr');
-  box.textContent = msg;
-  box.classList.add('show');
-}
+function showErr(msg) { $('saveErr').textContent = msg; $('saveErr').classList.add('show'); }
 function clearErr() { $('saveErr').classList.remove('show'); $('saveErr').textContent = ''; }
 
-/* ============ ضغط الصور ============ */
-async function compressImage(file, maxDim = 900, quality = 0.75) {
-  return new Promise((resolve, reject) => {
-    if (!file.type.startsWith('image/')) return reject(new Error('الملف ليس صورة'));
-    if (file.size > 10 * 1024 * 1024) return reject(new Error('الصورة كبيرة جدًا (>10MB)'));
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('فشل قراءة الملف'));
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('فشل تحميل الصورة'));
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
-        else if (height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
-        const canvas = document.createElement('canvas');
-        canvas.width = width; canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-/* ============ Boot ============ */
 async function boot() {
-  try {
-    SETTINGS = await ANEQ.settings.get();
-    $('modeLabel').textContent = ANEQ.ONLINE ? 'متصل بـ Supabase 🟢' : 'محلي 🟡';
-    if (!ANEQ.ONLINE) $('email').style.display = 'none';
-    const user = await ANEQ.auth.getUser();
-    if (user) showApp(user); else $('login').style.display = 'flex';
-    ANEQ.auth.onChange(u => { if (u) showApp(u); });
-  } catch (e) { console.error('boot error:', e); toast('خطأ في التحميل: ' + e.message, 'err'); }
+  SETTINGS = await ANEQ.settings.get();
+  const user = await ANEQ.auth.getUser();
+  if (user) showApp(user); else $('login').style.display = 'flex';
+  ANEQ.auth.onChange(u => { if (u) showApp(u); });
 }
 
 $('loginForm').onsubmit = async e => {
   e.preventDefault(); $('loginErr').textContent = '';
   try {
-    const input = ANEQ.ONLINE ? $('email').value.trim() : $('pw').value;
-    const data = await ANEQ.auth.signIn(input, $('pw').value);
+    const data = await ANEQ.auth.signIn($('email').value.trim(), $('pw').value);
     showApp(data.user || {});
   } catch (err) { $('loginErr').textContent = err.message || 'فشل'; }
 };
@@ -250,18 +207,17 @@ async function loadAll() {
   try {
     [PRODUCTS, ORDERS] = await Promise.all([ANEQ.products.list(), ANEQ.orders.list()]);
     renderStats(); renderProducts(); renderOrders(); renderCatList(); fillSettings();
-  } catch (e) { console.error('loadAll:', e); toast('خطأ: ' + e.message, 'err'); }
+  } catch (e) { toast('خطأ: ' + e.message, 'err'); }
 }
 
 async function renderStats() {
   try {
     const s = await ANEQ.stats();
     $('stats').innerHTML = `
-      <div class="stat"><div class="l">إجمالي المبيعات</div><b>${money(s.sales)}</b></div>
+      <div class="stat"><div class="l">المبيعات</div><b>${money(s.sales)}</b></div>
       <div class="stat info"><div class="l">الطلبات</div><b>${s.orders}</b></div>
       <div class="stat"><div class="l">المنتجات</div><b>${s.products}</b></div>
-      <div class="stat warn"><div class="l">مخزون منخفض</div><b>${s.lowStock}</b></div>
-      <div class="stat info"><div class="l">جديدة</div><b>${s.pending}</b></div>`;
+      <div class="stat warn"><div class="l">جديدة</div><b>${s.pending}</b></div>`;
   } catch (e) { console.error(e); }
 }
 
@@ -270,12 +226,12 @@ function renderProducts() {
   const list = PRODUCTS.filter(p => !q || (p.name+' '+p.cat).toLowerCase().includes(q));
   $('pBody').innerHTML = list.length ? list.map(p => {
     const imgs = p.images || [];
-    const firstImg = imgs[0] || p.img || '';
+    const first = imgs[0] || '';
     const extra = imgs.length > 1 ? `<span class="n">${imgs.length}</span>` : '';
     return `<tr>
       <td>${p.id}</td>
       <td><div style="display:flex;align-items:center;gap:9px">
-        <div class="td-img">${firstImg ? `<img src="${esc(firstImg)}">${extra}` : (p.emoji||'📦')}</div>
+        <div class="td-img">${first ? `<img src="${esc(first)}">${extra}` : (p.emoji||'📦')}</div>
         <span>${esc(p.name)}</span></div></td>
       <td>${esc(p.cat||'-')}</td><td>${money(p.price)}</td>
       <td><span class="badge ${+p.stock<=0?'bad':(+p.stock<=5?'warn':'ok')}">${p.stock}</span></td>
@@ -292,49 +248,51 @@ function renderCatList() {
 }
 
 function renderImgPreview() {
-  const all = [...PREVIEWS, ...PENDING_IMAGES];
-  $('imgPrev').innerHTML = all.map((src, i) => `
+  let html = PREVIEWS.map((src, i) => `
     <div class="thumb">
       <img src="${src}">
-      ${i === 0 ? '<span class="main">رئيسية</span>' : ''}
-      <button type="button" class="del" onclick="removeImg(${i})">✕</button>
+      ${i === 0 && NEW_FILES.length === 0 ? '<span class="main">رئيسية</span>' : ''}
+      <button type="button" class="del" onclick="removeImg('old', ${i})">✕</button>
     </div>`).join('');
+  
+  html += NEW_FILES.map((file, i) => {
+    const src = URL.createObjectURL(file);
+    return `
+    <div class="thumb">
+      <img src="${src}">
+      ${i === 0 && PREVIEWS.length === 0 ? '<span class="main">رئيسية</span>' : ''}
+      <button type="button" class="del" onclick="removeImg('new', ${i})">✕</button>
+    </div>`;
+  }).join('');
+  
+  $('imgPrev').innerHTML = html;
 }
 
-function removeImg(index) {
-  if (index < PREVIEWS.length) PREVIEWS.splice(index, 1);
-  else PENDING_IMAGES.splice(index - PREVIEWS.length, 1);
+function removeImg(type, index) {
+  if (type === 'old') PREVIEWS.splice(index, 1);
+  else NEW_FILES.splice(index, 1);
   renderImgPreview();
 }
 
-/* ============ Drag & Drop ============ */
 const imgDrop = $('imgDrop');
 imgDrop.onclick = () => $('fImgFiles').click();
 imgDrop.ondragover = e => { e.preventDefault(); imgDrop.classList.add('drag'); };
 imgDrop.ondragleave = () => imgDrop.classList.remove('drag');
 imgDrop.ondrop = async e => {
   e.preventDefault(); imgDrop.classList.remove('drag');
-  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-  await handleFiles(files);
+  addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')));
 };
-$('fImgFiles').onchange = async e => {
-  const files = Array.from(e.target.files);
-  await handleFiles(files);
+$('fImgFiles').onchange = e => {
+  addFiles(Array.from(e.target.files));
   e.target.value = '';
 };
-async function handleFiles(files) {
+function addFiles(files) {
   if (!files.length) return;
   clearErr();
-  for (const file of files) {
-    try {
-      const compressed = await compressImage(file);
-      PENDING_IMAGES.push(compressed);
-      renderImgPreview();
-    } catch (err) { showErr('خطأ في معالجة صورة: ' + err.message); }
-  }
+  files.forEach(f => NEW_FILES.push(f));
+  renderImgPreview();
 }
 
-/* ============ Add / Edit ============ */
 function editProduct(id) {
   const p = PRODUCTS.find(x => x.id == id); if (!p) return;
   EDIT_ID = id;
@@ -342,82 +300,77 @@ function editProduct(id) {
   $('fPrice').value = p.price??''; $('fOld').value = p.oldPrice||'';
   $('fStock').value = p.stock??0; $('fRate').value = p.rate??4.5;
   $('fEmoji').value = p.emoji||'📦'; $('fDesc').value = p.desc||'';
-  const imgs = (p.images && p.images.length) ? p.images : (p.img ? [p.img] : []);
-  PREVIEWS = [...imgs];
-  PENDING_IMAGES = [];
-  renderImgPreview();
+  PREVIEWS = [...(p.images || [])]; NEW_FILES = [];
+  renderImgPreview(); clearErr();
   $('formTitle').textContent = '✏️ تعديل المنتج'; $('saveBtn').textContent = 'تحديث';
-  clearErr();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function cancelEdit() {
   EDIT_ID = null; $('pForm').reset();
   $('fEmoji').value = '📦'; $('fStock').value = 10; $('fRate').value = 4.5;
-  PREVIEWS = []; PENDING_IMAGES = [];
+  PREVIEWS = []; NEW_FILES = [];
   renderImgPreview(); clearErr();
   $('formTitle').textContent = '➕ إضافة منتج جديد'; $('saveBtn').textContent = 'حفظ المنتج';
 }
 
 $('pForm').onsubmit = async e => {
-  e.preventDefault();
-  clearErr();
-  const btn = $('saveBtn'); const origText = btn.textContent;
-  btn.disabled = true; btn.textContent = 'جارٍ الحفظ...';
+  e.preventDefault(); clearErr();
+  const btn = $('saveBtn'); const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'جارٍ الرفع والحفظ...';
 
   try {
-    const images = [...PREVIEWS, ...PENDING_IMAGES];
-    const data = {
-      name: $('fName').value.trim(),
-      cat: $('fCat').value.trim() || 'عام',
-      price: +$('fPrice').value,
-      oldPrice: +$('fOld').value || 0,
-      stock: +$('fStock').value || 0,
-      rate: +$('fRate').value || 4.5,
-      emoji: $('fEmoji').value.trim() || '📦',
-      desc: $('fDesc').value.trim(),
-      images, img: images[0] || ''
-    };
+    // 1. رفع الصور الجديدة إلى Supabase Storage
+    const uploadedUrls = [];
+    for (const file of NEW_FILES) {
+      const url = await ANEQ.uploadImage(file);
+      uploadedUrls.push(url);
+    }
 
-    console.log('[SAVE] payload size:', JSON.stringify(data).length, 'bytes', 'images:', images.length);
+    // 2. دمج الصور القديمة مع الجديدة
+    const finalImages = [...PREVIEWS, ...uploadedUrls];
+
+    // 3. حفظ بيانات المنتج
+    const data = {
+      name: $('fName').value.trim(), cat: $('fCat').value.trim() || 'عام',
+      price: +$('fPrice').value, oldPrice: +$('fOld').value || 0,
+      stock: +$('fStock').value || 0, rate: +$('fRate').value || 4.5,
+      emoji: $('fEmoji').value.trim() || '📦', desc: $('fDesc').value.trim(),
+      images: finalImages
+    };
 
     if (EDIT_ID) await ANEQ.products.update(EDIT_ID, data);
     else await ANEQ.products.create(data);
 
-    toast(EDIT_ID ? 'تم التحديث ✓' : 'تمت الإضافة ✓', 'ok');
+    toast('تم الحفظ بنجاح ✓', 'ok');
     cancelEdit();
     await loadAll();
   } catch (err) {
-    console.error('[SAVE FAILED]', err);
-    let msg = 'فشل الحفظ: ' + (err.message || 'خطأ غير معروف');
-    if (err.details) msg += '\n' + err.details;
-    if (err.hint) msg += '\n' + err.hint;
-    if (err.code) msg += '\nCode: ' + err.code;
-    showErr(msg);
-    toast('فشل الحفظ — راجع التفاصيل', 'err');
+    console.error(err);
+    showErr('فشل: ' + (err.message || 'تأكد من إعداد Storage'));
+    toast('فشل الحفظ', 'err');
   } finally {
-    btn.disabled = false; btn.textContent = origText;
+    btn.disabled = false; btn.textContent = orig;
   }
 };
 
 async function delProduct(id) {
   if (!confirm('حذف المنتج؟')) return;
   try { await ANEQ.products.remove(id); toast('تم', 'ok'); await loadAll(); }
-  catch (e) { console.error(e); toast('فشل: ' + e.message, 'err'); }
+  catch (e) { toast('فشل: ' + e.message, 'err'); }
 }
 
-/* ============ Orders ============ */
 const STATUSES = ['جديد','قيد التنفيذ','تم الشحن','مكتمل','ملغي'];
 function renderOrders() {
   const q = ($('oSearch').value || '').toLowerCase();
   const list = ORDERS.filter(o => !q || ((o.customer||'')+' '+(o.phone||'')).toLowerCase().includes(q));
   $('oBody').innerHTML = list.length ? list.map(o => {
     const items = Array.isArray(o.items) ? o.items : [];
-    const itemTxt = items.map(i => `${esc(i.name)} ×${i.qty}`).join(' · ') || '-';
+    const txt = items.map(i => `${esc(i.name)} ×${i.qty}`).join(' · ') || '-';
     return `<tr>
       <td>#${String(o.id).slice(-4)}</td><td>${esc(o.customer)}</td>
       <td dir="ltr" style="text-align:right">${esc(o.phone)}</td>
-      <td style="max-width:200px;font-size:12px;color:var(--muted)">${itemTxt}</td>
+      <td style="max-width:200px;font-size:12px;color:var(--muted)">${txt}</td>
       <td><b>${money(o.total)}</b></td>
       <td><select onchange="setStatus(${o.id},this.value)" style="background:var(--panel2);color:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;cursor:pointer">${STATUSES.map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select></td>
       <td style="font-size:11.5px;color:var(--muted)">${esc(o.date||'')}</td>
@@ -426,16 +379,15 @@ function renderOrders() {
 }
 
 async function setStatus(id, status) {
-  try { await ANEQ.orders.update(id, { status }); const i = ORDERS.findIndex(x => x.id == id); if (i > -1) ORDERS[i].status = status; renderStats(); toast('تم ✓', 'ok'); }
-  catch (e) { console.error(e); toast('فشل: ' + e.message, 'err'); }
+  try { await ANEQ.orders.updateStatus(id, status); const i = ORDERS.findIndex(x=>x.id==id); if (i>-1) ORDERS[i].status = status; renderStats(); toast('تم ✓','ok'); }
+  catch (e) { toast('فشل: ' + e.message, 'err'); }
 }
 async function delOrder(id) {
   if (!confirm('حذف الطلب؟')) return;
-  try { await ANEQ.orders.remove(id); toast('تم', 'ok'); await loadAll(); }
-  catch (e) { console.error(e); toast('فشل: ' + e.message, 'err'); }
+  try { await ANEQ.orders.remove(id); toast('تم','ok'); await loadAll(); }
+  catch (e) { toast('فشل: ' + e.message, 'err'); }
 }
 
-/* ============ Settings ============ */
 function fillSettings() {
   $('sName').value = SETTINGS.storeName || '';
   $('sCurrency').value = SETTINGS.currency || '';
@@ -449,8 +401,8 @@ $('sForm').onsubmit = async e => {
       currency: $('sCurrency').value.trim() || 'أوقية',
       whatsapp: $('sWhatsapp').value.trim()
     });
-    toast('تم الحفظ ✓', 'ok'); renderStats(); renderProducts(); renderOrders();
-  } catch (err) { console.error(e); toast('فشل: ' + err.message, 'err'); }
+    toast('تم الحفظ ✓','ok'); renderStats();
+  } catch (err) { toast('فشل: ' + err.message, 'err'); }
 };
 
 document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => {
@@ -474,7 +426,7 @@ function exportCSV(type) {
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = `aneq_${type}_${Date.now()}.csv`; a.click();
-  toast('تم التصدير ✓', 'ok');
+  toast('تم التصدير ✓','ok');
 }
 
 boot();
