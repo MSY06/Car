@@ -207,7 +207,6 @@ async function boot() {
     $('pr').max = F.max; $('pr').value = F.max; $('pv').textContent = money(F.max);
     buildCats(); bindEvents(); render(); renderCart();
     document.title = (SETTINGS.storeName || 'ANEQ STORE');
-    console.log(ANEQ.ONLINE ? '🟢 Supabase' : '🟡 local', '| products:', PRODUCTS.length);
   } catch (e) { console.error(e); toast('تعذّر التحميل: ' + e.message, 'err'); }
 }
 
