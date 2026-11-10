@@ -1,254 +1,99 @@
-/* ============================================================
-   ANEQ — طبقة البيانات
-   ============================================================ */
 window.ANEQ = (function () {
   const USE_SB = !!(window.SUPABASE_URL && window.SUPABASE_KEY && window.supabase);
   const sb = USE_SB ? window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY) : null;
+  const K = { cart: 'aneq_cart' };
+  const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v==null?d:v; } catch { return d; } };
+  const lsSet = (k,v) => localStorage.setItem(k, JSON.stringify(v));
 
-  const K = { products: 'aneq_products', orders: 'aneq_orders', settings: 'aneq_settings', cart: 'aneq_cart' };
-  const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch { return d; } };
-  const lsSet = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-
-  const DEF_SET = { storeName: 'ANEQ STORE', currency: 'أوقية', whatsapp: '966500000000', password: 'admin123' };
-
-  const DEF_PRODS = [
-    { id:1, name:'سماعات لاسلكية احترافية', price:1990, oldPrice:2990, cat:'إلكترونيات', stock:45, emoji:'🎧', desc:'عزل ضوضاء نشط + بطارية 40 ساعة', rate:4.8, img:'', images:[] },
-    { id:2, name:'ساعة ذكية Sport', price:3490, oldPrice:0, cat:'إلكترونيات', stock:12, emoji:'⌚', desc:'تتبع صحة ولياقة ومقاومة للماء', rate:4.9, img:'', images:[] },
-    { id:3, name:'حقيبة ظهر مقاومة للماء', price:1290, oldPrice:0, cat:'حقائب', stock:30, emoji:'🎒', desc:'تصميم عملي مع جيب لابتوب', rate:4.5, img:'', images:[] },
-    { id:4, name:'حذاء رياضي خفيف', price:2490, oldPrice:3200, cat:'أحذية', stock:22, emoji:'👟', desc:'مثالي للجري والاستخدام اليومي', rate:4.7, img:'', images:[] },
-    { id:5, name:'نظارة شمسية UV400', price:890, oldPrice:0, cat:'اكسسوارات', stock:50, emoji:'🕶️', desc:'حماية كاملة من أشعة الشمس', rate:4.3, img:'', images:[] },
-    { id:6, name:'زجاجة ستانلس 750ml', price:590, oldPrice:0, cat:'اكسسوارات', stock:67, emoji:'🧴', desc:'تحفظ الحرارة 24 ساعة', rate:4.6, img:'', images:[] },
-    { id:7, name:'كيبورد ميكانيكي RGB', price:2890, oldPrice:3590, cat:'إلكترونيات', stock:8, emoji:'⌨️', desc:'سويتش أحمر + إضاءة قابلة للتخصيص', rate:4.7, img:'', images:[] },
-    { id:8, name:'شاحن لاسلكي 15W', price:790, oldPrice:0, cat:'إلكترونيات', stock:3, emoji:'🔌', desc:'شحن سريع متوافق مع كل الأجهزة', rate:4.4, img:'', images:[] }
-  ];
-
-  if (!USE_SB) {
-    if (lsGet(K.products) == null) lsSet(K.products, DEF_PRODS);
-    if (lsGet(K.orders) == null) lsSet(K.orders, []);
-    if (lsGet(K.settings) == null) lsSet(K.settings, DEF_SET);
-  }
-
-  /* تحويل صفوف DB إلى شكل موحد */
   const normalize = (p) => {
-    if (!p) return p;
     let images = p.images;
     if (typeof images === 'string') { try { images = JSON.parse(images); } catch { images = []; } }
     if (!Array.isArray(images)) images = [];
-    // ترحيل: إن لم يكن هناك مصفوفة صور ولكن توجد صورة فردية
-    if (images.length === 0 && p.img) images = [p.img];
-    return { ...p, images, img: images[0] || p.img || '' };
+    return { ...p, images, img: images[0] || '' };
   };
 
-  /* ================== Products ================== */
-  const products = {
-    async list() {
-      if (USE_SB) {
+  return {
+    ONLINE: USE_SB,
+    async uploadImage(file) {
+      if (!USE_SB) throw new Error('لا يوجد اتصال');
+      const ext = file.name ? file.name.split('.').pop() : 'jpg';
+      const fileName = `prod_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await sb.storage.from('images').upload(fileName, file);
+      if (error) throw error;
+      const { data } = sb.storage.from('images').getPublicUrl(fileName);
+      return data.publicUrl;
+    },
+    products: {
+      async list() {
         const { data, error } = await sb.from('products').select('*').order('id', { ascending: false });
-        if (error) { console.error('[products.list]', error); throw error; }
+        if (error) throw error;
         return (data || []).map(normalize);
-      }
-      return lsGet(K.products, []).map(normalize);
-    },
-    async create(p) {
-      const images = Array.isArray(p.images) ? p.images.filter(Boolean) : (p.img ? [p.img] : []);
-      const row = {
-        name: (p.name || '').trim(),
-        price: +p.price || 0,
-        oldPrice: +p.oldPrice || 0,
-        cat: (p.cat || 'عام').trim(),
-        stock: Math.max(0, +p.stock || 0),
-        emoji: p.emoji || '📦',
-        desc: p.desc || '',
-        rate: Math.min(5, Math.max(0, +p.rate || 4.5)),
-        img: images[0] || '',
-        images: images
-      };
-      if (USE_SB) {
+      },
+      async create(p) {
+        const row = { ...p, images: p.images || [] };
         const { data, error } = await sb.from('products').insert(row).select().single();
-        if (error) { console.error('[products.create]', error, 'row=', row); throw error; }
+        if (error) throw error;
         return normalize(data);
-      }
-      const arr = lsGet(K.products, []);
-      const item = { ...row, id: Date.now() };
-      arr.unshift(item); lsSet(K.products, arr);
-      return normalize(item);
-    },
-    async update(id, patch) {
-      const images = Array.isArray(patch.images) ? patch.images.filter(Boolean) : (patch.img ? [patch.img] : []);
-      const row = {
-        name: (patch.name || '').trim(),
-        price: +patch.price || 0,
-        oldPrice: +patch.oldPrice || 0,
-        cat: (patch.cat || 'عام').trim(),
-        stock: Math.max(0, +patch.stock || 0),
-        emoji: patch.emoji || '📦',
-        desc: patch.desc || '',
-        rate: Math.min(5, Math.max(0, +patch.rate || 4.5)),
-        img: images[0] || '',
-        images: images
-      };
-      if (USE_SB) {
+      },
+      async update(id, p) {
+        const row = { ...p, images: p.images || [] };
         const { data, error } = await sb.from('products').update(row).eq('id', id).select().single();
-        if (error) { console.error('[products.update]', error, 'row=', row); throw error; }
+        if (error) throw error;
         return normalize(data);
-      }
-      const arr = lsGet(K.products, []);
-      const i = arr.findIndex(x => x.id == id);
-      if (i < 0) throw new Error('المنتج غير موجود');
-      arr[i] = { ...arr[i], ...row };
-      lsSet(K.products, arr);
-      return normalize(arr[i]);
-    },
-    async remove(id) {
-      if (USE_SB) {
+      },
+      async remove(id) {
         const { error } = await sb.from('products').delete().eq('id', id);
-        if (error) { console.error('[products.remove]', error); throw error; }
-        return;
+        if (error) throw error;
       }
-      lsSet(K.products, lsGet(K.products, []).filter(x => x.id != id));
-    }
-  };
-
-  /* ================== Orders ================== */
-  const orders = {
-    async list() {
-      if (USE_SB) {
-        const { data, error } = await sb.from('orders').select('*').order('id', { ascending: false });
-        if (error) { console.error('[orders.list]', error); throw error; }
-        return (data || []).map(o => ({
-          ...o, total: Number(o.total),
-          date: o.date || (o.created_at ? new Date(o.created_at).toLocaleString('ar-EG') : '')
-        }));
-      }
-      return lsGet(K.orders, []);
     },
-    async create(payload) {
-      if (USE_SB) {
+    orders: {
+      async list() {
+        const { data, error } = await sb.from('orders').select('*').order('id', { ascending: false });
+        if (error) throw error;
+        return (data||[]).map(o => ({ ...o, total:Number(o.total), date: o.created_at ? new Date(o.created_at).toLocaleString('ar-EG') : '' }));
+      },
+      async updateStatus(id, status) {
+        const { error } = await sb.from('orders').update({ status }).eq('id', id);
+        if (error) throw error;
+      },
+      async create(payload) {
         const { data, error } = await sb.rpc('create_order', {
           p_customer: payload.customer, p_phone: payload.phone,
-          p_address: payload.address || '', p_notes: payload.notes || '',
+          p_address: payload.address||'', p_notes: payload.notes||'',
           p_items: payload.items.map(i => ({ id: i.id, qty: i.qty }))
         });
-        if (error) { console.error('[orders.create]', error); throw error; }
-        return data;
-      }
-      const total = payload.items.reduce((s, i) => s + i.price * i.qty, 0);
-      const order = {
-        id: Date.now(), customer: payload.customer, phone: payload.phone,
-        address: payload.address || '', notes: payload.notes || '',
-        items: payload.items, total, status: 'جديد',
-        date: new Date().toLocaleString('ar-EG')
-      };
-      const arr = lsGet(K.orders, []); arr.unshift(order); lsSet(K.orders, arr);
-      const prods = lsGet(K.products, []);
-      payload.items.forEach(it => {
-        const p = prods.find(x => x.id == it.id);
-        if (p) p.stock = Math.max(0, p.stock - it.qty);
-      });
-      lsSet(K.products, prods);
-      return order;
-    },
-    async update(id, patch) {
-      if (USE_SB) {
-        const { data, error } = await sb.from('orders').update(patch).eq('id', id).select().single();
-        if (error) { console.error('[orders.update]', error); throw error; }
-        return data;
-      }
-      const arr = lsGet(K.orders, []);
-      const i = arr.findIndex(x => x.id == id);
-      if (i < 0) throw new Error('الطلب غير موجود');
-      arr[i] = { ...arr[i], ...patch }; lsSet(K.orders, arr);
-      return arr[i];
-    },
-    async remove(id) {
-      if (USE_SB) {
-        const { error } = await sb.from('orders').delete().eq('id', id);
-        if (error) { console.error('[orders.remove]', error); throw error; }
-        return;
-      }
-      lsSet(K.orders, lsGet(K.orders, []).filter(x => x.id != id));
-    }
-  };
-
-  /* ================== Settings ================== */
-  const settings = {
-    async get() {
-      if (USE_SB) {
-        const { data, error } = await sb.from('settings').select('data').eq('id', 1).maybeSingle();
-        if (error) { console.error('[settings.get]', error); throw error; }
-        return { ...DEF_SET, ...(data?.data || {}) };
-      }
-      return { ...DEF_SET, ...lsGet(K.settings, {}) };
-    },
-    async save(patch) {
-      if (USE_SB) {
-        const cur = await this.get();
-        const next = { ...cur, ...patch };
-        const { data, error } = await sb.from('settings').update({ data: next }).eq('id', 1).select().single();
-        if (error) { console.error('[settings.save]', error); throw error; }
-        return { ...DEF_SET, ...data.data };
-      }
-      const s = { ...DEF_SET, ...lsGet(K.settings, {}), ...patch };
-      lsSet(K.settings, s);
-      return s;
-    }
-  };
-
-  /* ================== Stats ================== */
-  async function stats() {
-    if (USE_SB) {
-      const { data, error } = await sb.rpc('aneq_stats');
-      if (error) { console.error('[stats]', error); throw error; }
-      return data;
-    }
-    const p = lsGet(K.products, []), o = lsGet(K.orders, []);
-    const v = o.filter(x => x.status !== 'ملغي');
-    return {
-      sales: v.reduce((s, x) => s + (+x.total || 0), 0),
-      orders: o.length,
-      products: p.length,
-      lowStock: p.filter(x => +x.stock <= 5).length,
-      pending: o.filter(x => x.status === 'جديد').length
-    };
-  }
-
-  /* ================== Auth ================== */
-  const auth = {
-    async signIn(email, password) {
-      if (USE_SB) {
-        const { data, error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
         return data;
+      },
+      async remove(id) {
+        const { error } = await sb.from('orders').delete().eq('id', id);
+        if (error) throw error;
       }
-      const s = await settings.get();
-      if (password === s.password) {
-        sessionStorage.setItem('aneq_admin', '1');
-        return { user: { id: 'local', email: 'local' } };
+    },
+    settings: {
+      async get() {
+        const { data } = await sb.from('settings').select('data').eq('id', 1).maybeSingle();
+        return data?.data || { storeName:'ANEQ', currency:'أوقية', whatsapp:'' };
+      },
+      async save(patch) {
+        const cur = await this.get();
+        const { data, error } = await sb.from('settings').update({ data: { ...cur, ...patch } }).eq('id', 1).select().single();
+        if (error) throw error;
+        return data.data;
       }
-      throw new Error('كلمة المرور غير صحيحة');
     },
-    async signOut() {
-      if (USE_SB) return sb.auth.signOut();
-      sessionStorage.removeItem('aneq_admin');
+    stats: async () => {
+      const { count: p } = await sb.from('products').select('*', { count:'exact', head:true });
+      const { data: o } = await sb.from('orders').select('total, status');
+      const valid = o.filter(x => x.status !== 'ملغي');
+      return { products: p, orders: o.length, sales: valid.reduce((s,x)=>s+(+x.total||0),0), pending: o.filter(x=>x.status==='جديد').length };
     },
-    async getUser() {
-      if (USE_SB) {
-        const { data } = await sb.auth.getUser();
-        return data.user || null;
-      }
-      return sessionStorage.getItem('aneq_admin') === '1' ? { id: 'local', email: 'local' } : null;
+    auth: {
+      signIn: async (email, pw) => { const { data, error } = await sb.auth.signInWithPassword({ email, password: pw }); if (error) throw error; return data; },
+      signOut: async () => await sb.auth.signOut(),
+      getUser: async () => { const { data } = await sb.auth.getUser(); return data.user; },
+      onChange: (cb) => sb.auth.onAuthStateChange((_e, s) => cb(s?.user || null))
     },
-    onChange(cb) {
-      if (USE_SB) sb.auth.onAuthStateChange((_e, s) => cb(s?.user || null));
-    }
+    cart: { get: () => lsGet(K.cart, []), set: v => lsSet(K.cart, v) }
   };
-
-  /* ================== Cart ================== */
-  const cart = {
-    get: () => lsGet(K.cart, []),
-    set: v => lsSet(K.cart, v),
-    clear: () => lsSet(K.cart, [])
-  };
-
-  return { ONLINE: USE_SB, products, orders, settings, stats, auth, cart, sb };
 })();
