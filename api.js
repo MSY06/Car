@@ -1,8 +1,5 @@
 /* ============================================================
-   ANEQ — طبقة البيانات (Data Layer)
-   تعمل تلقائيًا في وضعين:
-   1) Supabase إذا كانت المفاتيح مضبوطة + SDK محمّل
-   2) localStorage كبديل
+   ANEQ — طبقة البيانات
    ============================================================ */
 window.ANEQ = (function () {
   const USE_SB = !!(window.SUPABASE_URL && window.SUPABASE_KEY && window.supabase);
@@ -15,14 +12,14 @@ window.ANEQ = (function () {
   const DEF_SET = { storeName: 'ANEQ STORE', currency: 'أوقية', whatsapp: '966500000000', password: 'admin123' };
 
   const DEF_PRODS = [
-    { id:1, name:'سماعات لاسلكية احترافية', price:1990, oldPrice:2990, cat:'إلكترونيات', stock:45, emoji:'🎧', desc:'عزل ضوضاء نشط + بطارية 40 ساعة', rate:4.8, img:'' },
-    { id:2, name:'ساعة ذكية Sport', price:3490, oldPrice:0, cat:'إلكترونيات', stock:12, emoji:'⌚', desc:'تتبع صحة ولياقة ومقاومة للماء', rate:4.9, img:'' },
-    { id:3, name:'حقيبة ظهر مقاومة للماء', price:1290, oldPrice:0, cat:'حقائب', stock:30, emoji:'🎒', desc:'تصميم عملي مع جيب لابتوب', rate:4.5, img:'' },
-    { id:4, name:'حذاء رياضي خفيف', price:2490, oldPrice:3200, cat:'أحذية', stock:22, emoji:'👟', desc:'مثالي للجري والاستخدام اليومي', rate:4.7, img:'' },
-    { id:5, name:'نظارة شمسية UV400', price:890, oldPrice:0, cat:'اكسسوارات', stock:50, emoji:'🕶️', desc:'حماية كاملة من أشعة الشمس', rate:4.3, img:'' },
-    { id:6, name:'زجاجة ستانلس 750ml', price:590, oldPrice:0, cat:'اكسسوارات', stock:67, emoji:'🧴', desc:'تحفظ الحرارة 24 ساعة', rate:4.6, img:'' },
-    { id:7, name:'كيبورد ميكانيكي RGB', price:2890, oldPrice:3590, cat:'إلكترونيات', stock:8, emoji:'⌨️', desc:'سويتش أحمر + إضاءة قابلة للتخصيص', rate:4.7, img:'' },
-    { id:8, name:'شاحن لاسلكي 15W', price:790, oldPrice:0, cat:'إلكترونيات', stock:3, emoji:'🔌', desc:'شحن سريع متوافق مع كل الأجهزة', rate:4.4, img:'' }
+    { id:1, name:'سماعات لاسلكية احترافية', price:1990, oldPrice:2990, cat:'إلكترونيات', stock:45, emoji:'🎧', desc:'عزل ضوضاء نشط + بطارية 40 ساعة', rate:4.8, img:'', images:[] },
+    { id:2, name:'ساعة ذكية Sport', price:3490, oldPrice:0, cat:'إلكترونيات', stock:12, emoji:'⌚', desc:'تتبع صحة ولياقة ومقاومة للماء', rate:4.9, img:'', images:[] },
+    { id:3, name:'حقيبة ظهر مقاومة للماء', price:1290, oldPrice:0, cat:'حقائب', stock:30, emoji:'🎒', desc:'تصميم عملي مع جيب لابتوب', rate:4.5, img:'', images:[] },
+    { id:4, name:'حذاء رياضي خفيف', price:2490, oldPrice:3200, cat:'أحذية', stock:22, emoji:'👟', desc:'مثالي للجري والاستخدام اليومي', rate:4.7, img:'', images:[] },
+    { id:5, name:'نظارة شمسية UV400', price:890, oldPrice:0, cat:'اكسسوارات', stock:50, emoji:'🕶️', desc:'حماية كاملة من أشعة الشمس', rate:4.3, img:'', images:[] },
+    { id:6, name:'زجاجة ستانلس 750ml', price:590, oldPrice:0, cat:'اكسسوارات', stock:67, emoji:'🧴', desc:'تحفظ الحرارة 24 ساعة', rate:4.6, img:'', images:[] },
+    { id:7, name:'كيبورد ميكانيكي RGB', price:2890, oldPrice:3590, cat:'إلكترونيات', stock:8, emoji:'⌨️', desc:'سويتش أحمر + إضاءة قابلة للتخصيص', rate:4.7, img:'', images:[] },
+    { id:8, name:'شاحن لاسلكي 15W', price:790, oldPrice:0, cat:'إلكترونيات', stock:3, emoji:'🔌', desc:'شحن سريع متوافق مع كل الأجهزة', rate:4.4, img:'', images:[] }
   ];
 
   if (!USE_SB) {
@@ -31,54 +28,81 @@ window.ANEQ = (function () {
     if (lsGet(K.settings) == null) lsSet(K.settings, DEF_SET);
   }
 
+  /* تحويل صفوف DB إلى شكل موحد */
+  const normalize = (p) => {
+    if (!p) return p;
+    let images = p.images;
+    if (typeof images === 'string') { try { images = JSON.parse(images); } catch { images = []; } }
+    if (!Array.isArray(images)) images = [];
+    // ترحيل: إن لم يكن هناك مصفوفة صور ولكن توجد صورة فردية
+    if (images.length === 0 && p.img) images = [p.img];
+    return { ...p, images, img: images[0] || p.img || '' };
+  };
+
   /* ================== Products ================== */
   const products = {
     async list() {
       if (USE_SB) {
         const { data, error } = await sb.from('products').select('*').order('id', { ascending: false });
-        if (error) throw error;
-        return data || [];
+        if (error) { console.error('[products.list]', error); throw error; }
+        return (data || []).map(normalize);
       }
-      return lsGet(K.products, []);
+      return lsGet(K.products, []).map(normalize);
     },
     async create(p) {
+      const images = Array.isArray(p.images) ? p.images.filter(Boolean) : (p.img ? [p.img] : []);
       const row = {
-        name: p.name, price: +p.price, oldPrice: +(p.oldPrice || 0),
-        cat: p.cat || 'عام', stock: +(p.stock || 0), emoji: p.emoji || '📦',
-        desc: p.desc || '', rate: +(p.rate || 4.5), img: p.img || ''
+        name: (p.name || '').trim(),
+        price: +p.price || 0,
+        oldPrice: +p.oldPrice || 0,
+        cat: (p.cat || 'عام').trim(),
+        stock: Math.max(0, +p.stock || 0),
+        emoji: p.emoji || '📦',
+        desc: p.desc || '',
+        rate: Math.min(5, Math.max(0, +p.rate || 4.5)),
+        img: images[0] || '',
+        images: images
       };
       if (USE_SB) {
         const { data, error } = await sb.from('products').insert(row).select().single();
-        if (error) throw error;
-        return data;
+        if (error) { console.error('[products.create]', error, 'row=', row); throw error; }
+        return normalize(data);
       }
       const arr = lsGet(K.products, []);
       const item = { ...row, id: Date.now() };
       arr.unshift(item); lsSet(K.products, arr);
-      return item;
+      return normalize(item);
     },
     async update(id, patch) {
+      const images = Array.isArray(patch.images) ? patch.images.filter(Boolean) : (patch.img ? [patch.img] : []);
       const row = {
-        name: patch.name, price: +patch.price, oldPrice: +(patch.oldPrice || 0),
-        cat: patch.cat || 'عام', stock: +(patch.stock || 0), emoji: patch.emoji || '📦',
-        desc: patch.desc || '', rate: +(patch.rate || 4.5), img: patch.img || ''
+        name: (patch.name || '').trim(),
+        price: +patch.price || 0,
+        oldPrice: +patch.oldPrice || 0,
+        cat: (patch.cat || 'عام').trim(),
+        stock: Math.max(0, +patch.stock || 0),
+        emoji: patch.emoji || '📦',
+        desc: patch.desc || '',
+        rate: Math.min(5, Math.max(0, +patch.rate || 4.5)),
+        img: images[0] || '',
+        images: images
       };
       if (USE_SB) {
         const { data, error } = await sb.from('products').update(row).eq('id', id).select().single();
-        if (error) throw error;
-        return data;
+        if (error) { console.error('[products.update]', error, 'row=', row); throw error; }
+        return normalize(data);
       }
       const arr = lsGet(K.products, []);
       const i = arr.findIndex(x => x.id == id);
       if (i < 0) throw new Error('المنتج غير موجود');
       arr[i] = { ...arr[i], ...row };
       lsSet(K.products, arr);
-      return arr[i];
+      return normalize(arr[i]);
     },
     async remove(id) {
       if (USE_SB) {
         const { error } = await sb.from('products').delete().eq('id', id);
-        if (error) throw error;
+        if (error) { console.error('[products.remove]', error); throw error; }
         return;
       }
       lsSet(K.products, lsGet(K.products, []).filter(x => x.id != id));
@@ -90,7 +114,7 @@ window.ANEQ = (function () {
     async list() {
       if (USE_SB) {
         const { data, error } = await sb.from('orders').select('*').order('id', { ascending: false });
-        if (error) throw error;
+        if (error) { console.error('[orders.list]', error); throw error; }
         return (data || []).map(o => ({
           ...o, total: Number(o.total),
           date: o.date || (o.created_at ? new Date(o.created_at).toLocaleString('ar-EG') : '')
@@ -101,13 +125,11 @@ window.ANEQ = (function () {
     async create(payload) {
       if (USE_SB) {
         const { data, error } = await sb.rpc('create_order', {
-          p_customer: payload.customer,
-          p_phone: payload.phone,
-          p_address: payload.address || '',
-          p_notes: payload.notes || '',
+          p_customer: payload.customer, p_phone: payload.phone,
+          p_address: payload.address || '', p_notes: payload.notes || '',
           p_items: payload.items.map(i => ({ id: i.id, qty: i.qty }))
         });
-        if (error) throw error;
+        if (error) { console.error('[orders.create]', error); throw error; }
         return data;
       }
       const total = payload.items.reduce((s, i) => s + i.price * i.qty, 0);
@@ -129,7 +151,7 @@ window.ANEQ = (function () {
     async update(id, patch) {
       if (USE_SB) {
         const { data, error } = await sb.from('orders').update(patch).eq('id', id).select().single();
-        if (error) throw error;
+        if (error) { console.error('[orders.update]', error); throw error; }
         return data;
       }
       const arr = lsGet(K.orders, []);
@@ -141,7 +163,7 @@ window.ANEQ = (function () {
     async remove(id) {
       if (USE_SB) {
         const { error } = await sb.from('orders').delete().eq('id', id);
-        if (error) throw error;
+        if (error) { console.error('[orders.remove]', error); throw error; }
         return;
       }
       lsSet(K.orders, lsGet(K.orders, []).filter(x => x.id != id));
@@ -153,7 +175,7 @@ window.ANEQ = (function () {
     async get() {
       if (USE_SB) {
         const { data, error } = await sb.from('settings').select('data').eq('id', 1).maybeSingle();
-        if (error) throw error;
+        if (error) { console.error('[settings.get]', error); throw error; }
         return { ...DEF_SET, ...(data?.data || {}) };
       }
       return { ...DEF_SET, ...lsGet(K.settings, {}) };
@@ -163,7 +185,7 @@ window.ANEQ = (function () {
         const cur = await this.get();
         const next = { ...cur, ...patch };
         const { data, error } = await sb.from('settings').update({ data: next }).eq('id', 1).select().single();
-        if (error) throw error;
+        if (error) { console.error('[settings.save]', error); throw error; }
         return { ...DEF_SET, ...data.data };
       }
       const s = { ...DEF_SET, ...lsGet(K.settings, {}), ...patch };
@@ -176,7 +198,7 @@ window.ANEQ = (function () {
   async function stats() {
     if (USE_SB) {
       const { data, error } = await sb.rpc('aneq_stats');
-      if (error) throw error;
+      if (error) { console.error('[stats]', error); throw error; }
       return data;
     }
     const p = lsGet(K.products, []), o = lsGet(K.orders, []);
@@ -228,5 +250,5 @@ window.ANEQ = (function () {
     clear: () => lsSet(K.cart, [])
   };
 
-  return { ONLINE: USE_SB, products, orders, settings, stats, auth, cart };
+  return { ONLINE: USE_SB, products, orders, settings, stats, auth, cart, sb };
 })();
