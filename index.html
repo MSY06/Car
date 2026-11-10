@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بورصة BOURSA | سوق السيارات في موريتانيا</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- الهيدر -->
+    <header class="header">
+        <div class="logo">بورصة BOURSA</div>
+        <nav class="nav-links">
+            <a href="#" class="btn-whatsapp">واتساب</a>
+            <a href="login.html" class="btn-admin">دخول المدير</a>
+        </nav>
+    </header>
+
+    <!-- القسم الرئيسي (Hero) -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>سيارتك القادمة<br>بهدوء وثقة.</h1>
+            <p>سيارات مفحوصة • تقسيط بدون بنك • توصيل في نواكشوط</p>
+            <button class="btn-primary">تصفح السيارات ↓</button>
+        </div>
+        <div class="hero-image">
+            <!-- يمكنك تغيير الرابط بصورة سيارتك المفضلة -->
+            <img src="https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" alt="سيارة">
+        </div>
+    </section>
+
+    <!-- قسم البحث -->
+    <section class="search-section">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="ابحث: Hilux, Corolla...">
+            <div class="filters">
+                <select id="filterCategory"><option value="">كل الأقسام</option></select>
+                <select id="filterCity">
+                    <option value="">كل المدن</option>
+                    <option value="نواكشوط">نواكشوط</option>
+                    <option value="نواذيبو">نواذيبو</option>
+                </select>
+                <button id="searchBtn">بحث</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- عرض السيارات -->
+    <section class="cars-section">
+        <h2>السيارات المتاحة</h2>
+        <div class="cars-grid" id="carsGrid">
+            <!-- سيتم تحميل السيارات هنا عبر JS -->
+            <p class="loading">جاري تحميل السيارات...</p>
+        </div>
+    </section>
+
+    <!-- التذييل -->
+    <footer>
+        <p>© 2024 بورصة BOURSA - جميع الحقوق محفوظة</p>
+    </footer>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
