@@ -34,11 +34,11 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 .reset:hover{background:var(--ink);color:#fff}
 .x{background:transparent;font-size:18px;color:#666;padding:4px 8px;border-radius:8px;border:none;cursor:pointer}
 
-/* ===== تعديل البانر الرئيسي (الصورة كخلفية) ===== */
+/* ===== البانر الرئيسي ===== */
 .hero{
   position:relative;
   background: url('hero.jpg') center/cover no-repeat;
-  background-color: #111; /* لون احتياطي في حال عدم وجود الصورة */
+  background-color: #111;
   color:#fff;
   border-radius:24px;
   padding:60px 40px;
@@ -47,7 +47,6 @@ input[type=range]{width:100%;accent-color:var(--ink)}
   display:flex;
   align-items:center;
 }
-/* طبقة شفافة فوق الصورة لتوضيح النص */
 .hero::before{
   content:'';
   position:absolute;
@@ -55,11 +54,7 @@ input[type=range]{width:100%;accent-color:var(--ink)}
   background:linear-gradient(to left, rgba(0,0,0,0.2), rgba(13,13,13,0.95) 70%);
   z-index:1;
 }
-.hero-content{
-  position:relative;
-  z-index:2;
-  max-width:540px;
-}
+.hero-content{position:relative; z-index:2; max-width:540px;}
 .hero h1{font-size:clamp(24px,4vw,36px);font-weight:800;line-height:1.4;text-shadow:0 2px 12px rgba(0,0,0,0.6)}
 .hero h1 em{color:var(--teal);font-style:normal}
 .hero p{color:#d1d5db;margin-top:12px;font-size:15px;line-height:1.7;text-shadow:0 1px 6px rgba(0,0,0,0.6)}
@@ -76,8 +71,9 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 @media(min-width:1400px){.grid{grid-template-columns:repeat(4,1fr)}}
 .card{background:#fff;border-radius:18px;padding:11px;border:1px solid var(--line);display:flex;flex-direction:column;transition:.25s}
 .card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(13,13,13,.08);border-color:var(--teal)}
-.thumb{aspect-ratio:1;border-radius:14px;background:linear-gradient(145deg,#f3f5f6,#e8ecee);display:flex;align-items:center;justify-content:center;font-size:46px;overflow:hidden;position:relative}
-.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb{aspect-ratio:1;border-radius:14px;background:linear-gradient(145deg,#f3f5f6,#e8ecee);display:flex;align-items:center;justify-content:center;font-size:46px;overflow:hidden;position:relative;cursor:pointer;}
+.thumb img{width:100%;height:100%;object-fit:cover;transition:.3s}
+.thumb:hover img{transform:scale(1.05)}
 .pill{position:absolute;top:8px;right:8px;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--teal);color:#000}
 .pill.out{background:#ffe4e4;color:#c62828}.pill.off{background:#111;color:#fff}
 .pname{font-size:14px;font-weight:800;margin-top:9px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -90,6 +86,18 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 .add:hover:not(:disabled){background:var(--teal);color:#000}
 .add:disabled{background:#eceef1;color:#aaa;cursor:not-allowed}
 .empty{text-align:center;padding:70px 20px;color:var(--muted)}.empty p{margin-top:12px;font-size:15px;font-weight:700}
+
+/* ===== نافذة معاينة الصور (Lightbox) ===== */
+.modal{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px;opacity:0;transition:opacity .3s}
+.modal.open{display:flex;opacity:1}
+.modal-close{position:absolute;top:20px;left:20px;background:#fff;color:#111;border:none;width:44px;height:44px;border-radius:50%;font-size:20px;font-weight:800;cursor:pointer;z-index:810;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.modal-img-wrap{width:100%;max-width:600px;aspect-ratio:1;background:#fff;border-radius:20px;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-img-wrap img{width:100%;height:100%;object-fit:contain}
+.modal-thumbs{display:flex;gap:10px;margin-top:20px;overflow-x:auto;max-width:100%;padding-bottom:10px;justify-content:center}
+.modal-thumbs img{width:60px;height:60px;object-fit:cover;border-radius:12px;cursor:pointer;border:2px solid transparent;opacity:.6;transition:.2s;background:#fff}
+.modal-thumbs img.active{border-color:var(--teal);opacity:1;transform:scale(1.1)}
+.modal-title{color:#fff;font-size:18px;font-weight:800;margin-top:20px;text-align:center}
+
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none}.scrim.show{display:block}
 .drawer{position:fixed;inset:0;z-index:220;display:none}.drawer.open{display:block}
 .ov{position:absolute;inset:0;background:rgba(0,0,0,.55)}
@@ -119,7 +127,7 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 .success{text-align:center;padding:20px 0}
 .okicon{width:60px;height:60px;border-radius:50%;background:var(--teal);color:#000;font-size:30px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
 .success h3{font-size:19px;margin-bottom:8px}.success p{font-size:13.5px;color:var(--muted);margin-bottom:4px}
-#toasts{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;gap:8px;align-items:center;width:max-content;max-width:90vw}
+#toasts{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:900;display:flex;flex-direction:column;gap:8px;align-items:center;width:max-content;max-width:90vw}
 .toast{background:#111;color:#fff;padding:12px 22px;border-radius:999px;font-size:13.5px;font-weight:700;box-shadow:0 12px 34px rgba(0,0,0,.28)}
 .toast.ok{background:#0e9f6e}.toast.err{background:#e02424}
 </style></head><body>
@@ -151,7 +159,6 @@ input[type=range]{width:100%;accent-color:var(--ink)}
   </aside>
 
   <main>
-    <!-- البانر الرئيسي الجديد: الصورة خلفية للمربع -->
     <section class="hero">
       <div class="hero-content">
         <h1>تسوّق <em>الأفضل</em> بأسعار لا تُقاوَم</h1>
@@ -172,6 +179,16 @@ input[type=range]{width:100%;accent-color:var(--ink)}
     <div class="grid" id="grid"></div>
     <div class="empty" id="empty" style="display:none"><div style="font-size:54px">🔍</div><p>لا توجد منتجات مطابقة</p></div>
   </main>
+</div>
+
+<!-- نافذة معاينة الصور (مخفية افتراضياً) -->
+<div class="modal" id="imgModal">
+  <button class="modal-close" onclick="closeImgModal()">✕</button>
+  <div class="modal-img-wrap">
+    <img id="mainModalImg" src="" alt="Product">
+  </div>
+  <div class="modal-thumbs" id="modalThumbs"></div>
+  <div class="modal-title" id="modalTitle"></div>
 </div>
 
 <div class="drawer" id="cartDrawer">
@@ -200,6 +217,7 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 <script src="api.js"></script>
 <script>
 let PRODUCTS = [], CART = [], SETTINGS = {};
+let CURRENT_GALLERY = []; // متغير لحفظ صور المنتج المفتوح حالياً
 const F = { q:'', max:5000, cats:[], rate:0, inStock:false, sort:'default' };
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -239,6 +257,9 @@ function bindEvents() {
   $('sort').onchange = e => { F.sort = e.target.value; render(); };
   $('btnFilter').onclick = () => { $('filters').classList.add('open'); $('scrim').classList.add('show'); };
   $('btnCart').onclick = () => { $('cartDrawer').classList.add('open'); renderCart(); };
+  
+  // إغلاق النافذة المنبثقة عند الضغط على زر Esc
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeImgModal(); });
 }
 
 function closeAll() { $('filters').classList.remove('open'); $('scrim').classList.remove('show'); $('cartDrawer').classList.remove('open'); }
@@ -277,7 +298,8 @@ function cardHTML(p) {
   const out = +p.stock <= 0;
   const off = p.oldPrice && +p.oldPrice > +p.price ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
   return `<article class="card">
-    <div class="thumb">${p.img ? `<img src="${esc(p.img)}" loading="lazy">` : (p.emoji||'📦')}
+    <div class="thumb" onclick="openImgModal(${p.id})">
+      ${p.img ? `<img src="${esc(p.img)}" loading="lazy">` : (p.emoji||'📦')}
       ${off ? `<span class="pill off">-${off}%</span>` : ''}
       ${out ? '<span class="pill out">نفد</span>' : (+p.stock <= 5 ? `<span class="pill">آخر ${p.stock}</span>` : '')}
     </div>
@@ -289,6 +311,52 @@ function cardHTML(p) {
   </article>`;
 }
 
+/* ===== دوال معاينة الصور ===== */
+function openImgModal(id) {
+  const p = PRODUCTS.find(x => x.id == id);
+  if (!p) return;
+
+  // محاولة قراءة مصفوفة الصور، إذا لم توجد نأخذ الصورة المفردة
+  let imgs = [];
+  if (Array.isArray(p.images) && p.images.length > 0) {
+    imgs = p.images.filter(img => img && typeof img === 'string');
+  } else if (p.img) {
+    imgs = [p.img];
+  }
+
+  if (imgs.length === 0) {
+    return toast('لا توجد صور متاحة لهذا المنتج', 'err');
+  }
+
+  CURRENT_GALLERY = imgs;
+  $('mainModalImg').src = imgs[0];
+  $('modalTitle').textContent = p.name;
+
+  const thumbsWrap = $('modalThumbs');
+  if (imgs.length > 1) {
+    thumbsWrap.style.display = 'flex';
+    thumbsWrap.innerHTML = imgs.map((src, i) => 
+      `<img src="${esc(src)}" class="${i === 0 ? 'active' : ''}" onclick="switchImg(this, ${i})" alt="thumbnail">`
+    ).join('');
+  } else {
+    thumbsWrap.style.display = 'none';
+  }
+
+  $('imgModal').classList.add('open');
+}
+
+function switchImg(el, index) {
+  if (!CURRENT_GALLERY[index]) return;
+  $('mainModalImg').src = CURRENT_GALLERY[index];
+  document.querySelectorAll('#modalThumbs img').forEach(img => img.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function closeImgModal() {
+  $('imgModal').classList.remove('open');
+}
+
+/* ===== دوال السلة والطلب ===== */
 function addToCart(id) {
   const p = PRODUCTS.find(x => x.id == id);
   if (!p || +p.stock <= 0) return toast('غير متوفر', 'err');
